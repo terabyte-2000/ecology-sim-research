@@ -1,15 +1,18 @@
 import numpy as np
 import pygame
 
-pygame.init()
 
-KERNEL_SIZE = 5
+def uniform_complex_around_unit_disc(shape):
+    return np.sqrt(np.random.uniform(0, 1, shape)) * np.exp(1.j * np.random.uniform(0, 2 * np.pi, shape))
 
-assert KERNEL_SIZE % 2 == 1
 
-WIDTH = 150
-HEIGHT = 90
-full_board = np.zeros((HEIGHT, WIDTH))
+kernel_size = 5
+
+assert kernel_size % 2 == 1
+
+width = 100
+height = 100
+full_board = np.zeros((height, width))
 
 FOOD = 2
 CREATURE = 1
@@ -17,14 +20,14 @@ SPACE = 0
 
 IDEAL_FOOD_AMT = 100
 
-BLACK = 0, 0, 0
-WHITE = 255, 255, 255
-RED = 255, 0, 0
-YELLOW = 255, 255, 20
+black = 0, 0, 0
+white = 255, 255, 255
+red = 255, 0, 0
+yellow = 255, 255, 20
 
-color_lookup: dict[int, tuple[int, int, int]] = {
-    SPACE: BLACK, CREATURE: RED, FOOD: YELLOW}
+color_lookup = {SPACE: black, CREATURE: red, FOOD: yellow}
 
+pygame.init()
 
 font_size = 36
 
@@ -40,15 +43,13 @@ font = pygame.font.Font(None, font_size)
 #     z2 = zeros[1][r]
 #     full_board[z1, z2] = 2
 
-for i in range(9):
-    x = np.random.randint(0, HEIGHT-1)
-    y = np.random.randint(0, WIDTH-1)
+for i in range(5):
+    x = np.random.randint(0, width-1)
+    y = np.random.randint(0, height-1)
     for a in range(x-2, x+3):
         for b in range(y-2, y+3):
-            if a >= 0 and a < HEIGHT and b >= 0 and b < WIDTH:
+            if a >= 0 and a < width and b >= 0 and b < height:
                 full_board[a, b] = 2
-
-original_board = full_board.copy()
 
 
 class Creature:
@@ -59,7 +60,7 @@ class Creature:
         self.food = 0
         # self.kernel = uniform_complex_around_unit_disc(
         #     (kernel_size, kernel_size))
-        self.kernel = np.random.uniform(-3, 3, size=(KERNEL_SIZE, KERNEL_SIZE))
+        self.kernel = np.random.uniform(-3, 3, size=(kernel_size, kernel_size))
 
     def clone(self):
         creat = Creature(self.x, self.y)
@@ -74,8 +75,8 @@ class Creature:
         full_board[self.y, self.x] = SPACE
         self.x += delta_x
         self.y += delta_y
-        self.x %= WIDTH
-        self.y %= HEIGHT
+        self.x %= width
+        self.y %= height
         if full_board[self.y, self.x] == FOOD:
             self.food += 1
         full_board[self.y, self.x] = CREATURE
@@ -90,17 +91,17 @@ class Creature:
                 if del_i == 0 and del_j == 0:
                     continue
 
-                i = (self.y + del_i) % HEIGHT
-                j = (self.x + del_j) % WIDTH
+                i = (self.y + del_i) % height
+                j = (self.x + del_j) % width
 
                 # assuming odd kernel size
-                dist_to_edge = (KERNEL_SIZE-1)//2
+                dist_to_edge = (kernel_size-1)//2
                 # _neighborhood = space[i-dist_to_edge:i +
                 #                       dist_to_edge+1, j-dist_to_edge:j+dist_to_edge+1]
 
                 _neighborhood = []
                 for ii in range(i-dist_to_edge, i+dist_to_edge+1):
-                    _neighborhood.append(space[ii % HEIGHT].take(
+                    _neighborhood.append(space[ii % height].take(
                         np.arange(j-dist_to_edge, j+dist_to_edge+1), mode='wrap'))
 
                 _neighborhood = np.array(_neighborhood)
@@ -153,14 +154,14 @@ def fitness(creat):
 def generate_pop(n):
     arr = []
     for _ in range(n):
-        i, j = np.random.randint(HEIGHT), np.random.randint(WIDTH)
+        i, j = np.random.randint(height), np.random.randint(width)
         creat = Creature(j, i)
         arr.append(creat)
     return np.array(arr)
 
 
 def crossover(creat1, creat2):
-    i, j = np.random.randint(HEIGHT), np.random.randint(WIDTH)
+    i, j = np.random.randint(height), np.random.randint(width)
     kern = 0.5*(creat1.kernel + creat2.kernel)
     creat = Creature(j, i)
     creat.kernel = kern
@@ -172,7 +173,7 @@ def mutate(creat):
     new_creat = Creature(creat.x, creat.y)
     # new_creat.kernel = creat.kernel + 0.5*uniform_complex_around_unit_disc((kernel_size, kernel_size))
     new_creat.kernel = creat.kernel + \
-        np.random.uniform(-2, 2, size=(KERNEL_SIZE, KERNEL_SIZE))
+        np.random.uniform(-2, 2, size=(kernel_size, kernel_size))
     return new_creat
 
 # print(full_board)
@@ -187,12 +188,12 @@ population = generate_pop(50)
 # for i in range()
 
 
-FPS = 60
+fps = 60
 fpsClock = pygame.time.Clock()
 
-CELL_SIZE = 7
-SC_WIDTH, SC_HEIGHT = WIDTH*CELL_SIZE, HEIGHT*CELL_SIZE
-screen = pygame.display.set_mode((SC_WIDTH, SC_HEIGHT))
+cell_size = 7
+sc_width, sc_height = width*cell_size, height*cell_size
+screen = pygame.display.set_mode((sc_width, sc_height))
 
 done = False
 
@@ -202,7 +203,7 @@ moves = 200
 generation = 1
 
 while not done:
-    screen.fill(BLACK)
+    screen.fill(black)
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -216,10 +217,10 @@ while not done:
     cnt = (cnt + 1) % moves
 
     # Render the text
-    text_render = font.render(f'Generation: {generation}', True, WHITE)
+    text_render = font.render(f'Generation: {generation}', True, white)
 
     # Calculate the position to place the text (top center)
-    text_position = text_render.get_rect(center=(SC_WIDTH // 2, 50))
+    text_position = text_render.get_rect(center=(sc_width // 2, 50))
 
     # full_board[np.random.choice(np.ravel(np.where(full_board == 0)))] = 2
     # zeros = None
@@ -254,9 +255,8 @@ while not done:
 
         pop_copy = np.array([creat.clone() for creat in population])
 
-        # for creat in population:
-        #     full_board[creat.y, creat.x] = SPACE
-        full_board = original_board.copy()
+        for creat in population:
+            full_board[creat.y, creat.x] = SPACE
 
         for i, _ in enumerate(population):
             parent1 = pop_copy[min(
@@ -271,15 +271,14 @@ while not done:
         # np.random.choice(np.where(full_board == 0), size=5, replace=False)
 
     # black for 0, white for 1
-    for y in range(0, SC_HEIGHT, CELL_SIZE):
-        for x in range(0, SC_WIDTH, CELL_SIZE):
+    for y in range(0, sc_height, cell_size):
+        for x in range(0, sc_width, cell_size):
             col = color_lookup[int(
-                full_board[y // CELL_SIZE, x // CELL_SIZE])]
-            pygame.draw.rect(screen, col, (x, y, CELL_SIZE, CELL_SIZE))
+                full_board[y // cell_size, x // cell_size])]
+            pygame.draw.rect(screen, col, (x, y, cell_size, cell_size))
     # Draw.
-
     screen.blit(text_render, text_position)
 
     pygame.display.flip()
 
-    fpsClock.tick(FPS)
+    fpsClock.tick(fps)
